@@ -1,6 +1,7 @@
 const userModel = require('../models/user.model')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const tokenBlackListModel = require('../models/blacklist.model')
 
 //controller function is used to handle the logic of a specific route. it is called by the router when a request is made to that route. in routes/auth.routes.js we have defined a route for registering a new user and we have assigned the controller function to handle the logic of that route. when a request is made to that route, the controller function will be called and it will handle the logic of registering a new user.
 
@@ -98,4 +99,39 @@ async function loginUserController(req,res){
     })
 }
 
-module.exports = {registerUserController, loginUserController}
+
+/**
+ * @name logoutUser
+ * @description logout a user, clear the cookie and add the token to the blacklist
+ * @access private
+ */
+
+async function logoutUserController(req,res){
+    const token = req.cookies.token
+    if(token){
+        //here we are adding the token to the blacklist, so that it cannot be used for authentication in future requests. the token will be removed from the blacklist after it expires.
+        await tokenBlackListModel.create({token})
+        res.clearCookie("token").status(200).json({message:"user logged out successfully"})
+    }
+}
+
+
+/**
+ * @name getMe
+ * @description get the logged in user details.
+ * @access private  
+ */
+
+async function getMeController(req,res){
+    const user = await userModel.findById(req.user.id)
+    res.status(200).json({
+        message:"user details fetched succesfully",
+        user:{
+            id:user._id,
+            username:user.username,
+            email:user.email
+        }
+    })
+}
+
+module.exports = {registerUserController, loginUserController, logoutUserController , getMeController}
